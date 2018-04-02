@@ -18,7 +18,7 @@
 //! The CPU load must be below this amount for ships to be spawned, this help prevents overloaded server issues..
 static Constant		SPAWN_AI_LOAD( "SPAWN_AI_LOAD", 0.75f );
 //! what is the max spawn per player
-static Constant		MAX_SPAWN_PER_PLAYER( "MAX_SPAWN_PER_PLAYER", 2.0f );
+static Constant		MAX_SPAWN_PER_PLAYER( "MAX_SPAWN_PER_PLAYER", 8.0f );
 
 //---------------------------------------------------------------------------------------------------
 
@@ -45,6 +45,28 @@ static const RomanDigit ROMAN_DIGITS[]=
 	{"I",     1},
 };
 
+static const bool checkAllowedShips(NounShip::Type type)
+{
+	static const bool ALLOWED_SHIPS[] =
+	{
+		// list of allowed ship type spawners
+		false,	// UNKNOWN,
+		false,	// FIGHTER,
+		true,	// ENGINEER,
+		true,	// SUPPLY,
+		false,	// TRANSPORT,
+		false,	// SCOUT,
+		false,	// FRIGATE,
+		true,	// DESTROYER,
+		true,	// CRUISER,
+		true,	// DREAD,
+		false,	// STATION,
+		false,	// PLATFORM,
+		false,	// PLATFORM_SUPPLY
+	};
+
+	return ALLOWED_SHIPS[type];
+}
 
 static CharString GenerateRomanNumerals( unsigned int a_nNumber )
 {
@@ -248,8 +270,7 @@ void NounSpawnShip::simulate( dword nTick )
 		}
 
 		// if CPU load over a set amount do not spawn any new AI...
-		if ( Profiler::CPUused() < SPAWN_AI_LOAD &&
-			(m_sTimeMask.length() == 0 || Time::isTime( Time::seconds(), m_sTimeMask )) )
+		if ( Profiler::CPUused() < SPAWN_AI_LOAD )
 		{
 			// update all current spawner objects and tally the total chance & spawn score ...
 			int nTotalChance = 0, nTotalSpawnScore = 0;
@@ -374,6 +395,7 @@ void NounSpawnShip::simulate( dword nTick )
 					
 					context()->attachNoun( pSpawn );
 
+					nTotalSpawnScore += pSpawner->score();
 					LOG_STATUS( "NounSpawnShip", "Spawning Ship, Type: %s, Name: %s, Rank: %d, Faction: %s, Spawn Score: %d/%d", 
 						NounShip::typeText( pSpawn->type() ), pSpawn->name(), pSpawn->rank(), factionText( pSpawn->factionId() ), nTotalSpawnScore, nMaxSpawn );
 
@@ -384,7 +406,6 @@ void NounSpawnShip::simulate( dword nTick )
 						pSpawn->setOrder( pSpawner->order(), pOrderTarget, NounShip::wRef( pSpawn ) );
 					}
 
-					nTotalSpawnScore += pSpawner->score();
 					if ( pSpawner->limit() > 0 && pSpawner->spawnedCount() >= pSpawner->limit() )
 						nTotalChance -= pSpawner->chance();
 
@@ -486,12 +507,15 @@ NounSpawnShip::Ref NounSpawnShip::makeTeamSpawner( GameContext * a_pContext, int
 		NounShip * pShip = WidgetCast<NounShip>( pTemplate->noun() );
 		if (! pShip )
 			continue;		// invalid ship
+		if (!checkAllowedShips(pShip->type()))
+			continue;		// ship not in array
 		//if ( a_bGateSpawner && !pShip->enableGateSpawn() )
 		//	continue;		// ship can't be spawned at gate
 
-		int nRank = pTemplate->rank() + 1;
-		if ( nRank < 1 )
-			nRank = 1;		// prevent a divide by zero
+		// We used to use ship rank to determine score, but with the tier
+		// changes, a single Engineer could equal one high ranked player in
+		// the event it got picked to spawn
+		int nRank = pShip->gadgetLevel();
 
 		NounSpawnShip::Spawner * pSpawner = new NounSpawnShip::Spawner();
 		pSpawner->setNounTemplate( pTemplate );
@@ -500,7 +524,7 @@ NounSpawnShip::Ref NounSpawnShip::makeTeamSpawner( GameContext * a_pContext, int
 		pSpawner->setRandom( true );
 		pSpawner->setLimit( Max<int>( 25 / nRank, 1 ) );
 		pSpawner->setChance( 100 / nRank );
-		pSpawner->setScore( nRank + 1 );
+		pSpawner->setScore( nRank );
 
 		pShipSpawner->addSpawner( pSpawner );
 	}
