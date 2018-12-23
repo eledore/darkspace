@@ -1030,7 +1030,7 @@ inline T sqr( T number )
 }
 
 const float UPDATE_CHATTER_RATE = 2.0f;
-const float CHATTER_VOLUME = 0.35f;
+const float CHATTER_VOLUME = 0.25f;
 const int	CHATTER_COUNT = 10;
 const float TARGET_LOCK_RATE = 0.75f;
 const float CAMERA_TARGET_YAW = PI;
@@ -1299,7 +1299,13 @@ void ViewTactical::onRender( RenderContext & context, const RectInt & w )
 			}
 		}
 
-		if (! Keyboard::ctrlDown() )
+		NounStructure * buildTarget = pShip->getBuildTarget();
+		if (buildTarget != NULL) {
+			m_pDoc->setCursorTarget(buildTarget);
+			m_pDoc->setTarget(buildTarget);
+			pShip->setBuildTarget(NULL);
+		}
+		else if (! Keyboard::ctrlDown() )
 			m_pDoc->setCursorTarget( bestTarget );
 	}
 

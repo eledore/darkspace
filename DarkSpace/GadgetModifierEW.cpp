@@ -25,10 +25,10 @@ dword GadgetModifierEW::hotkey() const
 CharString GadgetModifierEW::useTip(Noun * pTarget, bool shift) const
 {
 	CharString tip;
-	tip += CharString().format("\nRange:<X;100>%.0fgu", range() * calculateModifier(modifierType()));
+	tip += CharString().format("\nRange:<X;100>%.0fgu", range() * calculateModifier( MT_EWAR_RANGE ));
 	tip += CharString().format("\nEnergy Cost:<X;100>%.1f", energyCost() * calculateModifier( MT_EWAR_ENERGY, true));
 	if (active() && m_Target.valid())
-		tip += CharString().format("\nTarget:<X;100>%s", m_Target->displayName(false));
+		tip += CharString().format("\nTarget:<X;100>%s", m_Target->displayName(false).cstr());
 	return tip;
 }
 
@@ -47,9 +47,6 @@ bool GadgetModifierEW::usable(Noun * pTarget, bool shift) const
 	if (((NounShip *)pTarget)->isDestroyed())
 		return false;
 
-	if (!isEnemy(pTargetShip))
-		return false;
-
 	if (pTargetShip->testFlags( NounShip::FLAG_CLOAKED|NounShip::FLAG_IN_SAFE_ZONE ) )
 		return false;
 
@@ -57,7 +54,7 @@ bool GadgetModifierEW::usable(Noun * pTarget, bool shift) const
 		return false;
 
 	float distance = (worldPosition() - pTarget->worldPosition()).magnitude();
-	if (distance > range() * calculateModifier(modifierType()))
+	if (distance > range() * calculateModifier(MT_EWAR_RANGE))
 		return false;        // target out of range
 
 	return true;
@@ -73,7 +70,9 @@ void GadgetModifierEW::use(dword when, Noun * pTarget, bool shift)
 	if (active() && m_Target.valid())
 	{
 		NounGadget::use(when, pTarget, shift);
-		m_Target->addModifier(modifierType(), strength());
+		for (int i=0; i<m_Modifiers.size(); ++i)
+			m_Target->subtractModifier(m_Modifiers[i], strength());
+
 		if (isServer())
 		{
 			setFlags(FLAG_ACTIVE, false);
@@ -87,7 +86,10 @@ void GadgetModifierEW::use(dword when, Noun * pTarget, bool shift)
 		if (!shift && pShipTarget != NULL)
 		{
 			m_Target = pShipTarget;
-			m_Target->subtractModifier(modifierType(), strength());
+
+			for (int i = 0; i<m_Modifiers.size(); ++i)
+				m_Target->addModifier(m_Modifiers[i], strength());
+
 			if (isServer())
 			{
 				setFlags(FLAG_ACTIVE, true);
@@ -106,7 +108,7 @@ int GadgetModifierEW::useEnergy( dword nTick, int energy )
 		{
 			int nCost = energyCost() * calculateModifier( MT_EWAR_ENERGY, true);
 			float fDistance = (worldPosition() - m_Target->worldPosition()).magnitude();
-			float fRange = range() * calculateModifier( modifierType() );
+			float fRange = range() * calculateModifier( MT_EWAR_RANGE );
 
 			if ( fDistance <= fRange && energy >= nCost )
 			{
@@ -131,7 +133,9 @@ void GadgetModifierEW::release()
 
 	if(m_Target.valid())
 	{
-		m_Target->addModifier(modifierType(), strength());
+		for (int i = 0; i<m_Modifiers.size(); ++i)
+			m_Target->subtractModifier(m_Modifiers[i], strength());
+
 		m_Target = NULL;
 	}
 }

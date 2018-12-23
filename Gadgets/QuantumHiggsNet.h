@@ -1,18 +1,17 @@
-#ifndef REDUCE_WEAPON_RANGE_H 
-#define REDUCE_WEAPON_RANGE_H
+#ifndef INCREASE_MASS_H 
+#define INCREASE_MASS_H
 
 #include "DarkSpace/GadgetModifierEW.h"
 
 //----------------------------------------------------------------------------
 
-class ReduceWeaponRange : public GadgetModifierEW 
+class QuantumHiggsNet : public GadgetModifierEW 
 {
 public:
 	DECLARE_WIDGET_CLASS();
-	ReduceWeaponRange()
+	QuantumHiggsNet()
 	{
-		m_Modifiers.push(MT_WEAPON_RANGE);
-		m_Modifiers.push(MT_BEAM_RANGE);
+		m_Modifiers.push(MT_MASS);
 	}
 	Type type() const
 	{
@@ -44,7 +43,7 @@ public:
 	}
 	float strength() const
 	{
-		return -10.0f;
+		return -100.0f;
 	}
 	float range() const
 	{

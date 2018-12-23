@@ -76,7 +76,7 @@ inline T sqr( T number )
 }
 
 const float UPDATE_CHATTER_RATE = 2.0f;
-const float CHATTER_VOLUME = 0.35f;
+const float CHATTER_VOLUME = 0.25f;
 const int	CHATTER_COUNT = 10;
 const float TARGET_LOCK_RATE = 0.75f;
 const float CAMERA_TARGET_YAW = PI;
@@ -393,8 +393,16 @@ void ViewPlanet::onRender( RenderContext & context, const RectInt & w )
 		}
 	}
 
-	// set the best target
-	pDoc->setCursorTarget( bestTarget );
+	NounStructure * buildTarget = pShip->getBuildTarget();
+	if (buildTarget != NULL) {
+		pDoc->setCursorTarget(buildTarget);
+		pDoc->setTarget(buildTarget);
+		pShip->setBuildTarget(NULL);
+	}
+	else {
+		// set the best target
+		pDoc->setCursorTarget(bestTarget);
+	}
 
 	// if a enemy object is near, render a red box along the edge of the window..
 	if ( ViewGame::sm_pViewGame != NULL )
